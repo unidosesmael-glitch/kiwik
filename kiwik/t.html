@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bookstore - Venda de Livros</title>
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#8B4513",
+            secondary: "#D2691E",
+            neutral: "#F5F5F4"
+          },
+          fontFamily: {
+            sans: ["Inter", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-neutral text-gray-900 font-sans">
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 w-full bg-white shadow z-50">
+    <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+      <h1 class="text-xl font-bold text-primary">📚 Bookstore</h1>
+      <div class="flex items-center gap-4">
+        <input type="text" id="search" placeholder="Buscar livros..."
+          class="border rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
+        <button id="cart-btn" class="relative text-2xl">
+          🛒
+          <span id="cart-count"
+            class="absolute -top-2 -right-2 bg-primary text-white text-xs rounded-full px-2">0</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="pt-24 pb-12 bg-secondary text-white text-center">
+    <h2 class="text-3xl font-bold">Descubra seu próximo livro favorito</h2>
+    <p class="mt-2">Clássicos e lançamentos em um só lugar</p>
+    <button class="mt-4 px-6 py-2 rounded-lg bg-white text-secondary font-semibold shadow hover:bg-neutral">
+      Comprar Agora
+    </button>
+  </header>
+
+  <!-- Grid de livros -->
+  <main class="container mx-auto px-4 py-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="book-grid">
+    <!-- Livros vão ser injetados via JS -->
+  </main>
+
+  <!-- Carrinho slide-over -->
+  <aside id="cart" class="fixed top-0 right-0 w-80 h-full bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+    <div class="p-4 flex justify-between items-center border-b">
+      <h3 class="text-lg font-bold">Carrinho</h3>
+      <button id="close-cart">✖</button>
+    </div>
+    <div id="cart-items" class="p-4 space-y-3"></div>
+    <div class="p-4 border-t">
+      <p class="font-semibold">Total: <span id="cart-total">Kz 0</span></p>
+      <button class="w-full mt-3 px-4 py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary/90">
+        Finalizar Compra
+      </button>
+    </div>
+  </aside>
+
+  <!-- JS -->
+  <script>
+    const books = [
+      { id: 1, title: "Dom Casmurro", author: "Machado de Assis", price: 2500, img: "https://picsum.photos/200/300?1" },
+      { id: 2, title: "O Primo Basílio", author: "Eça de Queirós", price: 3000, img: "https://picsum.photos/200/300?2" },
+      { id: 3, title: "Mayombe", author: "Pepetela", price: 3500, img: "https://picsum.photos/200/300?3" },
+      { id: 4, title: "O Alienista", author: "Machado de Assis", price: 2000, img: "https://picsum.photos/200/300?4" },
+      { id: 5, title: "Capitães da Areia", author: "Jorge Amado", price: 2800, img: "https://picsum.photos/200/300?5" },
+      { id: 6, title: "Terra Sonâmbula", author: "Mia Couto", price: 3200, img: "https://picsum.photos/200/300?6" }
+    ];
+
+    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+    function renderBooks(list) {
+      const grid = document.getElementById("book-grid");
+      grid.innerHTML = "";
+      list.forEach(book => {
+        const card = document.createElement("article");
+        card.className = "bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col";
+        card.innerHTML = `
+          <img src="${book.img}" alt="Capa do livro ${book.title}" class="w-full h-52 object-cover">
+          <div class="p-4 flex-1 flex flex-col">
+            <h3 class="text-lg font-semibold line-clamp-2">${book.title}</h3>
+            <p class="text-sm text-gray-500 mt-1">${book.author}</p>
+            <div class="mt-3 flex items-center justify-between">
+              <div class="text-xl font-bold">Kz ${book.price}</div>
+              <button class="px-3 py-1 rounded-lg bg-primary text-white text-sm hover:opacity-90" onclick="addToCart(${book.id})">
+                Adicionar
+              </button>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function updateCart() {
+      localStorage.setItem("cart", JSON.stringify(cart));
+      document.getElementById("cart-count").innerText = cart.length;
+
+      const cartItems = document.getElementById("cart-items");
+      const cartTotal = document.getElementById("cart-total");
+      cartItems.innerHTML = "";
+      let total = 0;
+
+      cart.forEach(item => {
+        total += item.price;
+        const div = document.createElement("div");
+        div.className = "flex justify-between items-center";
+        div.innerHTML = `
+          <p>${item.title}</p>
+          <button onclick="removeFromCart(${item.id})" class="text-red-500">Remover</button>
+        `;
+        cartItems.appendChild(div);
+      });
+
+      cartTotal.innerText = `Kz ${total}`;
+    }
+
+    function addToCart(id) {
+      const book = books.find(b => b.id === id);
+      cart.push(book);
+      updateCart();
+    }
+
+    function removeFromCart(id) {
+      cart = cart.filter(b => b.id !== id);
+      updateCart();
+    }
+
+    document.getElementById("search").addEventListener("input", e => {
+      const q = e.target.value.toLowerCase();
+      const filtered = books.filter(b => b.title.toLowerCase().includes(q));
+      renderBooks(filtered);
+    });
+
+    document.getElementById("cart-btn").addEventListener("click", () => {
+      document.getElementById("cart").classList.remove("translate-x-full");
+    });
+    document.getElementById("close-cart").addEventListener("click", () => {
+      document.getElementById("cart").classList.add("translate-x-full");
+    });
+
+    renderBooks(books);
+    updateCart();
+  </script>
+</body>
+</html>
